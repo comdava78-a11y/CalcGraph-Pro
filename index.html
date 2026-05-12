@@ -1,0 +1,2007 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0f1117">
+    <link rel="icon" type="image/x-icon" href="icon.ico">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <title>CalcGraph Pro — Инженерный калькулятор + Графики</title>
+    <style>
+        :root {
+            --bg: #0f1117;
+            --panel-bg: #1a1e26;
+            --btn-bg: #252c38;
+            --btn-hover: #303845;
+            --btn-active: #3b4554;
+            --text: #e1e8f0;
+            --text-dim: #8899aa;
+            --accent: #3b6a9e;
+            --danger: #5c3a3a;
+            --success: #2d4a3a;
+            --radius: 14px;
+            --panel-radius: 24px;
+            --shadow: 0 20px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04);
+            --display-bg: #0a0d12;
+            --canvas-bg: #0a0d12;
+            --grid-color: #1a2430;
+            --axis-color: #445566;
+            --input-bg: #0a0d12;
+            --history-bg: #14181f;
+            --badge-bg: #252c38;
+            --modal-bg: #1a1e26;
+            --transition: 0.3s ease;
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        .light-theme {
+            --bg: #e8ecf1;
+            --panel-bg: #ffffff;
+            --btn-bg: #e1e5eb;
+            --btn-hover: #d1d6dd;
+            --btn-active: #c1c7d0;
+            --text: #1a1e26;
+            --text-dim: #6b7280;
+            --accent: #4d8cc7;
+            --danger: #d4a0a0;
+            --success: #a0d4b0;
+            --shadow: 0 15px 30px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.05);
+            --display-bg: #f5f7fa;
+            --canvas-bg: #fafbfc;
+            --grid-color: #e1e5eb;
+            --axis-color: #9ca3af;
+            --input-bg: #f5f7fa;
+            --history-bg: #f8f9fb;
+            --badge-bg: #e1e5eb;
+            --modal-bg: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            height: 100%;
+            overflow-x: hidden;
+        }
+
+        body {
+            background: var(--bg);
+            min-height: 100%;
+            min-height: -webkit-fill-available;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            padding: 12px;
+            padding-bottom: calc(12px + var(--safe-bottom));
+            -webkit-tap-highlight-color: transparent;
+            -webkit-user-select: none;
+            user-select: none;
+            transition: background var(--transition);
+            overflow-x: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: flex-start;
+            max-width: 1400px;
+            width: 100%;
+            flex: 1;
+        }
+
+        .calculator,
+        .graph-panel,
+        .history-panel {
+            background: var(--panel-bg);
+            border-radius: var(--panel-radius);
+            padding: 18px 14px 14px;
+            box-shadow: var(--shadow);
+            width: 100%;
+            transition: background var(--transition), box-shadow var(--transition), opacity 0.3s, max-width 0.3s, flex 0.3s, padding 0.3s;
+            overflow: hidden;
+        }
+        .calculator {
+            flex: 0 0 420px;
+            max-width: 460px;
+            min-width: 320px;
+        }
+        .graph-panel {
+            flex: 2 1 600px;
+            min-width: 360px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .history-panel {
+            flex: 0 0 280px;
+            max-width: 320px;
+            min-width: 250px;
+            max-height: 800px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .calculator.collapsed {
+            flex: 0 0 auto;
+            min-width: auto;
+            max-width: 60px;
+            padding: 10px 6px;
+        }
+        .calculator.collapsed .buttons-grid,
+        .calculator.collapsed .display,
+        .calculator.collapsed .mode-row {
+            display: none;
+        }
+        .calculator.collapsed .top-bar {
+            flex-direction: column;
+            gap: 6px;
+        }
+        .history-panel.collapsed {
+            flex: 0 0 auto;
+            min-width: auto;
+            max-width: 50px;
+            padding: 8px 4px;
+        }
+        .history-panel.collapsed .history-list,
+        .history-panel.collapsed h4 {
+            display: none;
+        }
+
+        .toggle-panel-btn {
+            background: var(--btn-bg);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: var(--text-dim);
+            cursor: pointer;
+            border-radius: 8px;
+            padding: 4px 8px;
+            font-size: 0.65rem;
+            transition: 0.2s;
+            white-space: nowrap;
+            touch-action: manipulation;
+        }
+        .toggle-panel-btn:hover {
+            background: var(--btn-hover);
+            color: var(--text);
+        }
+
+        .top-bar {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 6px;
+            padding: 0 4px;
+        }
+        .top-bar button {
+            padding: 6px 10px;
+            font-size: 0.7rem;
+            border-radius: 8px;
+            min-height: 28px;
+            background: var(--btn-bg);
+            border: 1px solid rgba(255,255,255,0.08);
+            color: var(--text-dim);
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+            touch-action: manipulation;
+        }
+        .top-bar button:hover {
+            background: var(--btn-hover);
+            color: var(--text);
+        }
+
+        .display {
+            background: var(--display-bg);
+            border-radius: 16px;
+            padding: 14px 16px;
+            margin-bottom: 14px;
+            text-align: right;
+            box-shadow: inset 0 3px 6px rgba(0,0,0,0.3);
+            border: 1px solid rgba(128,128,128,0.1);
+            min-height: 75px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            cursor: text;
+            outline: none;
+            transition: background var(--transition), border var(--transition);
+            -webkit-user-select: text;
+            user-select: text;
+        }
+        .display:focus-within {
+            border-color: var(--accent);
+        }
+        .expression-preview {
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            min-height: 20px;
+            word-wrap: break-word;
+            letter-spacing: 0.4px;
+            margin-bottom: 4px;
+        }
+        .main-display {
+            color: var(--text);
+            font-size: 2.2rem;
+            font-weight: 400;
+            letter-spacing: 0.5px;
+            line-height: 1.15;
+            word-break: break-all;
+        }
+
+        .mode-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 0 4px;
+            color: var(--text-dim);
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+        }
+        .badge {
+            background: var(--badge-bg);
+            padding: 5px 10px;
+            border-radius: 16px;
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            transition: background var(--transition);
+        }
+        .badge.active {
+            background: var(--accent);
+            color: white;
+            box-shadow: 0 0 10px rgba(100,150,255,0.25);
+        }
+
+        .buttons-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+        }
+        .row {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+        }
+        button {
+            background: var(--btn-bg);
+            border: none;
+            border-radius: var(--radius);
+            padding: 12px 2px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.1s ease;
+            box-shadow: 0 3px 5px rgba(0,0,0,0.2), 0 1px 0 rgba(255,255,255,0.02);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            min-height: 42px;
+            white-space: nowrap;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        button:active {
+            transform: scale(0.93);
+            background: var(--btn-active);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
+        }
+        @media (hover: hover) {
+            button:hover {
+                background: var(--btn-hover);
+            }
+        }
+
+        .sci-btn {
+            background: var(--btn-bg);
+            color: var(--text-dim);
+            font-size: 0.78rem;
+        }
+        .op-btn {
+            background: #2a4560;
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 1.15rem;
+        }
+        .clear-btn {
+            background: var(--danger);
+            color: #ffb0b0;
+            font-weight: 600;
+        }
+        .equal-btn {
+            background: #25608a;
+            color: white;
+            font-weight: 700;
+            font-size: 1.3rem;
+            box-shadow: 0 3px 10px rgba(0,120,240,0.2);
+        }
+        .graph-btn {
+            background: var(--success);
+            color: #b0e0c0;
+            font-weight: 600;
+            font-size: 0.8rem;
+            grid-column: span 5;
+            min-height: 38px;
+            border-radius: 12px;
+        }
+        .zero-btn {
+            grid-column: span 2;
+        }
+
+        .graph-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .graph-input-row {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .graph-input-row input {
+            flex: 1;
+            min-width: 140px;
+            background: var(--input-bg);
+            border: 1px solid rgba(128,128,128,0.15);
+            border-radius: 10px;
+            padding: 10px 12px;
+            color: var(--text);
+            font-size: 16px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            outline: none;
+            transition: all var(--transition);
+            -webkit-user-select: text;
+            user-select: text;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        .graph-input-row input:focus {
+            border-color: var(--accent);
+        }
+        .graph-input-row button {
+            padding: 8px 12px;
+            font-size: 0.8rem;
+            border-radius: 10px;
+            min-height: 36px;
+        }
+        .btn-sm {
+            padding: 6px 10px;
+            font-size: 0.75rem;
+            border-radius: 8px;
+            min-height: 30px;
+        }
+
+        .templates-scroll {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            max-height: 70px;
+            overflow-y: auto;
+            padding: 2px 0;
+            -webkit-overflow-scrolling: touch;
+        }
+        .templates-scroll span {
+            background: var(--btn-bg);
+            padding: 5px 9px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            white-space: nowrap;
+            transition: 0.15s;
+            border: 1px solid transparent;
+            touch-action: manipulation;
+        }
+        .templates-scroll span:active {
+            background: var(--btn-active);
+            color: var(--text);
+            border-color: var(--accent);
+        }
+
+        .canvas-wrap {
+            background: var(--canvas-bg);
+            border-radius: 16px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 3px 8px rgba(0,0,0,0.3);
+            border: 1px solid rgba(128,128,128,0.08);
+            flex: 1;
+            min-height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background var(--transition), border-radius 0.3s;
+            touch-action: manipulation;
+        }
+        .canvas-wrap.fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            height: -webkit-fill-available;
+            z-index: 999;
+            border-radius: 0;
+            border: none;
+            background: #000;
+            min-height: auto;
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .download-row {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .download-btn {
+            background: var(--btn-bg);
+            color: var(--text-dim);
+            font-size: 0.75rem;
+            padding: 8px 14px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            border: 1px solid rgba(128,128,128,0.15);
+            transition: 0.2s;
+            touch-action: manipulation;
+        }
+        .download-btn:active {
+            background: var(--btn-hover);
+            border-color: var(--accent);
+            color: var(--text);
+        }
+
+        .history-panel h4 {
+            color: var(--text);
+            font-size: 0.85rem;
+            margin-bottom: 4px;
+            letter-spacing: 0.5px;
+        }
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .history-item {
+            background: var(--history-bg);
+            border-radius: 10px;
+            padding: 10px 12px;
+            cursor: pointer;
+            transition: all 0.15s;
+            border: 1px solid transparent;
+            font-size: 0.78rem;
+            color: var(--text-dim);
+            word-break: break-all;
+            touch-action: manipulation;
+        }
+        .history-item:active {
+            border-color: var(--accent);
+            color: var(--text);
+        }
+        .history-item .hist-expr {
+            font-weight: 600;
+            color: var(--text);
+            font-size: 0.85rem;
+        }
+        .history-item .hist-result {
+            color: var(--accent);
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+        .history-item .hist-time {
+            font-size: 0.65rem;
+            color: var(--text-dim);
+            opacity: 0.6;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        .modal {
+            background: var(--modal-bg);
+            border-radius: 20px;
+            padding: 24px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow);
+            transition: background var(--transition);
+            -webkit-overflow-scrolling: touch;
+        }
+        .modal h3 {
+            color: var(--text);
+            margin-bottom: 12px;
+        }
+        .modal h4 {
+            color: var(--accent);
+            margin: 12px 0 6px;
+            font-size: 0.9rem;
+        }
+        .modal p,
+        .modal li {
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            line-height: 1.5;
+            margin: 4px 0;
+        }
+        .modal ul {
+            padding-left: 18px;
+        }
+        .modal input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid rgba(128,128,128,0.2);
+            background: var(--input-bg);
+            color: var(--text);
+            font-family: monospace;
+            font-size: 0.8rem;
+            margin-bottom: 12px;
+            -webkit-user-select: text;
+            user-select: text;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        .modal button {
+            padding: 10px 20px;
+            font-size: 0.85rem;
+            border-radius: 10px;
+            margin: 4px;
+            touch-action: manipulation;
+        }
+        #qrcode {
+            margin: 12px auto;
+            display: flex;
+            justify-content: center;
+        }
+        kbd {
+            background: var(--btn-bg);
+            padding: 2px 7px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.75rem;
+            border: 1px solid rgba(128,128,128,0.3);
+            color: var(--text);
+        }
+
+        .shortcut-toast {
+            position: fixed;
+            bottom: 20px;
+            bottom: calc(20px + var(--safe-bottom));
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--panel-bg);
+            color: var(--text);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            z-index: 1100;
+            box-shadow: var(--shadow);
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            white-space: nowrap;
+            max-width: 90vw;
+            text-align: center;
+        }
+        .shortcut-toast.show {
+            opacity: 1;
+        }
+
+        .footer-note {
+            width: 100%;
+            text-align: center;
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            opacity: 0.5;
+            padding: 12px 0 4px;
+            margin-top: auto;
+        }
+
+        @media (max-width: 1200px) {
+            .app-container {
+                flex-wrap: wrap;
+            }
+            .history-panel {
+                flex: 1 1 100%;
+                max-width: 100%;
+                max-height: 250px;
+                min-width: auto;
+            }
+        }
+        @media (max-width: 900px) {
+            body {
+                padding: 8px;
+                padding-bottom: calc(8px + var(--safe-bottom));
+            }
+            .app-container {
+                flex-direction: column;
+                align-items: center;
+                gap: 10px;
+                max-width: 100%;
+            }
+            .calculator,
+            .graph-panel,
+            .history-panel {
+                max-width: 100%;
+                min-width: 280px;
+                width: 100%;
+                flex: none;
+                border-radius: 20px;
+                padding: 14px 10px 10px;
+            }
+            .calculator.collapsed {
+                max-width: 56px;
+                min-width: auto;
+            }
+            .history-panel.collapsed {
+                max-width: 46px;
+                min-width: auto;
+            }
+            .main-display {
+                font-size: 1.7rem;
+            }
+            button {
+                padding: 10px 1px;
+                font-size: 0.82rem;
+                min-height: 36px;
+                border-radius: 12px;
+            }
+            .sci-btn {
+                font-size: 0.68rem;
+            }
+            .row {
+                gap: 4px;
+            }
+            .canvas-wrap {
+                min-height: 250px;
+            }
+            .graph-input-row input {
+                font-size: 16px;
+            }
+        }
+        @media (max-width: 480px) {
+            body {
+                padding: 4px;
+                padding-bottom: calc(4px + var(--safe-bottom));
+            }
+            .calculator,
+            .graph-panel,
+            .history-panel {
+                padding: 10px 6px 8px;
+                border-radius: 16px;
+            }
+            .calculator.collapsed {
+                max-width: 48px;
+                padding: 6px 4px;
+            }
+            .history-panel.collapsed {
+                max-width: 40px;
+                padding: 4px 2px;
+            }
+            .row {
+                gap: 3px;
+            }
+            button {
+                padding: 8px 0px;
+                font-size: 0.7rem;
+                border-radius: 10px;
+                min-height: 30px;
+            }
+            .sci-btn {
+                font-size: 0.6rem;
+            }
+            .op-btn {
+                font-size: 0.85rem;
+            }
+            .main-display {
+                font-size: 1.3rem;
+            }
+            .display {
+                padding: 10px 10px;
+                min-height: 55px;
+                border-radius: 12px;
+            }
+            .expression-preview {
+                font-size: 0.7rem;
+                min-height: 16px;
+            }
+            .canvas-wrap {
+                min-height: 200px;
+                border-radius: 12px;
+            }
+            .top-bar button {
+                padding: 4px 7px;
+                font-size: 0.6rem;
+                min-height: 24px;
+                border-radius: 6px;
+            }
+            .badge {
+                padding: 3px 7px;
+                font-size: 0.6rem;
+            }
+            .graph-input-row input {
+                padding: 8px 10px;
+                font-size: 14px;
+            }
+            .graph-input-row button {
+                padding: 6px 8px;
+                font-size: 0.7rem;
+                min-height: 30px;
+            }
+            .modal {
+                padding: 14px;
+                border-radius: 16px;
+                width: 95%;
+                max-height: 85vh;
+            }
+            .modal h3 {
+                font-size: 1rem;
+            }
+            .modal h4 {
+                font-size: 0.8rem;
+            }
+            .modal p,
+            .modal li {
+                font-size: 0.7rem;
+            }
+            .shortcut-toast {
+                font-size: 0.65rem;
+                padding: 8px 14px;
+                bottom: calc(12px + var(--safe-bottom));
+            }
+        }
+        @media (max-width: 360px) {
+            button {
+                padding: 6px 0px;
+                font-size: 0.62rem;
+                min-height: 26px;
+                border-radius: 8px;
+            }
+            .sci-btn {
+                font-size: 0.55rem;
+            }
+            .main-display {
+                font-size: 1.1rem;
+            }
+            .row {
+                gap: 2px;
+            }
+            .canvas-wrap {
+                min-height: 180px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="calculator" id="calcPanel">
+            <div class="top-bar">
+                <button id="themeToggleBtn" title="Тёмная/светлая тема" aria-label="Переключить тему">🌓</button>
+                <button id="voiceBtn" title="Голосовой ввод" aria-label="Голосовой ввод">🎤</button>
+                <button id="helpBtn" title="Инструкция" aria-label="Открыть инструкцию">❓</button>
+                <button class="toggle-panel-btn" id="toggleCalcBtn" title="Свернуть калькулятор" aria-label="Свернуть калькулятор">◀</button>
+                <span style="flex:1;"></span>
+                <span class="badge active" id="angleBadge">RAD</span>
+            </div>
+            <div class="display" tabindex="0" id="displayArea" aria-label="Дисплей калькулятора">
+                <div class="expression-preview" id="expressionPreview"></div>
+                <div class="main-display" id="mainDisplay">0</div>
+            </div>
+            <div class="buttons-grid">
+                <div class="row">
+                    <button class="sci-btn" data-action="func" data-value="sin(">sin</button>
+                    <button class="sci-btn" data-action="func" data-value="cos(">cos</button>
+                    <button class="sci-btn" data-action="func" data-value="tan(">tan</button>
+                    <button class="sci-btn" data-action="func" data-value="log(">log</button>
+                    <button class="sci-btn" data-action="func" data-value="ln(">ln</button>
+                </div>
+                <div class="row">
+                    <button class="sci-btn" data-action="func" data-value="sqrt(">√</button>
+                    <button class="sci-btn" data-action="func" data-value="pow(">x<sup>y</sup></button>
+                    <button class="sci-btn" data-action="value" data-value="π">π</button>
+                    <button class="sci-btn" data-action="value" data-value="e">e</button>
+                    <button class="sci-btn" data-action="value" data-value="!">n!</button>
+                </div>
+                <div class="row">
+                    <button class="func-btn" data-action="value" data-value="(">(</button>
+                    <button class="func-btn" data-action="value" data-value=")">)</button>
+                    <button class="func-btn" data-action="value" data-value="^">^</button>
+                    <button class="func-btn" data-action="value" data-value="%">%</button>
+                    <button class="clear-btn" data-action="clear">AC</button>
+                </div>
+                <div class="row">
+                    <button data-action="value" data-value="7">7</button>
+                    <button data-action="value" data-value="8">8</button>
+                    <button data-action="value" data-value="9">9</button>
+                    <button class="op-btn" data-action="value" data-value="/">÷</button>
+                    <button class="func-btn" data-action="delete">⌫</button>
+                </div>
+                <div class="row">
+                    <button data-action="value" data-value="4">4</button>
+                    <button data-action="value" data-value="5">5</button>
+                    <button data-action="value" data-value="6">6</button>
+                    <button class="op-btn" data-action="value" data-value="*">×</button>
+                    <button class="func-btn" data-action="toggleSign">±</button>
+                </div>
+                <div class="row">
+                    <button data-action="value" data-value="1">1</button>
+                    <button data-action="value" data-value="2">2</button>
+                    <button data-action="value" data-value="3">3</button>
+                    <button class="op-btn" data-action="value" data-value="-">−</button>
+                    <button class="sci-btn" id="angleToggleBtn" data-action="toggleAngle">RAD</button>
+                </div>
+                <div class="row">
+                    <button class="zero-btn" data-action="value" data-value="0">0</button>
+                    <button data-action="value" data-value=".">.</button>
+                    <button class="op-btn" data-action="value" data-value="+">+</button>
+                    <button class="equal-btn" data-action="calculate">=</button>
+                </div>
+                <div class="row">
+                    <button class="graph-btn" data-action="plotFromCalc">📈 ПОСТРОИТЬ ГРАФИК</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="graph-panel" id="graphPanel">
+            <div class="graph-header">
+                <h3 style="color:var(--text);margin:0;font-size:0.9rem;">📐 ГРАФИКИ ФУНКЦИЙ</h3>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <span class="badge active" id="graphModeBadge">RAD</span>
+                    <button class="btn-sm" id="fullscreenBtn" title="На весь экран" aria-label="График на весь экран">⛶</button>
+                    <button class="btn-sm" id="shareGraphBtn" style="background:var(--accent);color:white;" aria-label="Поделиться">🔗</button>
+                    <button class="btn-sm" id="printGraphBtn" aria-label="Печать">🖨️</button>
+                </div>
+            </div>
+            <div class="graph-input-row">
+                <input type="text" id="graphInput" placeholder="f(x) = ..." value="sin(x)" autocomplete="off" aria-label="Введите функцию">
+                <button class="equal-btn btn-sm" id="plotBtn" aria-label="Построить график">Построить</button>
+                <button class="clear-btn btn-sm" id="clearGraphsBtn" aria-label="Очистить графики">✕</button>
+            </div>
+
+            <details open>
+                <summary style="color:var(--text-dim);font-size:0.75rem;cursor:pointer;">📋 Базовые функции</summary>
+                <div class="templates-scroll" id="basicTemplates"></div>
+            </details>
+            <details>
+                <summary style="color:var(--text-dim);font-size:0.75rem;cursor:pointer;">⚛️ Физика / Инженерия</summary>
+                <div class="templates-scroll" id="physicsTemplates"></div>
+            </details>
+            <details>
+                <summary style="color:var(--text-dim);font-size:0.75rem;cursor:pointer;">📊 Статистика / Сигналы</summary>
+                <div class="templates-scroll" id="statsTemplates"></div>
+            </details>
+
+            <div class="canvas-wrap" id="canvasWrap">
+                <canvas id="graphCanvas"></canvas>
+            </div>
+            <div class="download-row">
+                <button class="download-btn" id="downloadPngBtn" aria-label="Скачать PNG">📥 PNG</button>
+                <button class="download-btn" id="downloadSvgBtn" aria-label="Скачать SVG">📥 SVG</button>
+                <span style="font-size:0.65rem;color:var(--text-dim);">Скачать изображение</span>
+            </div>
+        </div>
+
+        <div class="history-panel" id="historyPanel">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <h4>📜 История</h4>
+                <div style="display:flex;gap:4px;">
+                    <button class="toggle-panel-btn" id="toggleHistoryBtn" title="Свернуть историю" aria-label="Свернуть историю">▶</button>
+                    <button class="btn-sm" id="clearHistoryBtn" style="font-size:0.65rem;" aria-label="Очистить историю">Очистить</button>
+                </div>
+            </div>
+            <div class="history-list" id="historyList">
+                <div style="color:var(--text-dim);font-size:0.7rem;text-align:center;padding:20px;">
+                    Пока пусто.<br>Начните вычисления!
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer-note">Сделал ученик 10А класса Русинов Давид</div>
+
+    <div class="modal-overlay" id="shareModal">
+        <div class="modal">
+            <h3>🔗 Поделиться графиком</h3>
+            <p style="color:var(--text-dim);font-size:0.8rem;">Скопируйте ссылку или отсканируйте QR-код</p>
+            <input type="text" id="shareLinkInput" readonly aria-label="Ссылка на график">
+            <div id="qrcode"></div>
+            <button class="equal-btn" id="copyShareLinkBtn">📋 Копировать</button>
+            <button class="clear-btn" id="closeShareModal">Закрыть</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="helpModal">
+        <div class="modal">
+            <h3>❓ Инструкция</h3>
+            <h4>🧮 Калькулятор</h4>
+            <ul>
+                <li>Функции: <code>sin(x), cos(x), tan(x), log(x), ln(x), sqrt(x), pow(x,y)</code></li>
+                <li>Константы: <code>π</code> (P), <code>e</code> (E)</li>
+                <li>Факториал: <code>5!</code> | Проценты: <code>50%</code></li>
+                <li>RAD ↔ DEG — кнопка в калькуляторе</li>
+            </ul>
+            <h4>⌨️ Горячие клавиши</h4>
+            <ul>
+                <li><kbd>Enter</kbd> / <kbd>=</kbd> — вычислить</li>
+                <li><kbd>Backspace</kbd> — удалить | <kbd>Escape</kbd> — очистить</li>
+                <li><kbd>Ctrl+Z</kbd> — отмена</li>
+                <li><kbd>F</kbd> — график на весь экран</li>
+                <li><kbd>?</kbd> — инструкция</li>
+            </ul>
+            <h4>📈 Графики</h4>
+            <ul>
+                <li>Функция от <code>x</code> → <b>Построить</b></li>
+                <li>Шаблоны — быстрая вставка</li>
+                <li>Скачивание PNG / SVG</li>
+            </ul>
+            <button class="equal-btn" id="closeHelpModal">Понятно</button>
+        </div>
+    </div>
+
+    <div class="shortcut-toast" id="shortcutToast" aria-live="polite"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js">
+    </script>
+
+    <script>
+    (function() {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+
+        function initAudio() {
+            if (!audioCtx) {
+                try { audioCtx = new AudioContext(); } catch(e) {}
+            }
+        }
+
+        function playSound(freq, type, duration, vol = 0.06) {
+            if (!audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch(e) {}
+        }
+
+        function soundClick() { playSound(800, 'sine', 0.08, 0.04); }
+        function soundCalculate() { playSound(600, 'triangle', 0.15, 0.08); }
+        function soundError() { playSound(150, 'sawtooth', 0.3, 0.05); }
+        function soundClear() { playSound(200, 'square', 0.2, 0.05); }
+        function soundToggle() { playSound(1000, 'sine', 0.1, 0.03); }
+        function soundGraph() { playSound(500, 'triangle', 0.2, 0.1); }
+
+        let expr = '';
+        let input = '0';
+        let fullExpr = '';
+        let lastRes = null;
+        let evaluated = false;
+        let angle = 'RAD';
+        let isDarkTheme = true;
+        let history = [];
+        let undoStack = [];
+
+        try {
+            history = JSON.parse(localStorage.getItem('calcHistory') || '[]');
+        } catch(e) { history = []; }
+
+        const canvas = document.getElementById('graphCanvas');
+        const ctx = canvas.getContext('2d');
+        let graphFuncs = [];
+        const colors = ['#4da6ff','#ff6b6b','#51cf66','#ffd43b','#cc5de8','#ff922b','#20c997','#f06595'];
+
+        const mainDisp = document.getElementById('mainDisplay');
+        const previewDisp = document.getElementById('expressionPreview');
+        const displayArea = document.getElementById('displayArea');
+        const angleBadge = document.getElementById('angleBadge');
+        const angleBtn = document.getElementById('angleToggleBtn');
+        const graphModeBadge = document.getElementById('graphModeBadge');
+        const graphInput = document.getElementById('graphInput');
+        const historyList = document.getElementById('historyList');
+        const shareModal = document.getElementById('shareModal');
+        const shareLinkInput = document.getElementById('shareLinkInput');
+        const qrcodeDiv = document.getElementById('qrcode');
+        const helpModal = document.getElementById('helpModal');
+        const shortcutToast = document.getElementById('shortcutToast');
+        const canvasWrap = document.getElementById('canvasWrap');
+
+        let isFullscreen = false;
+        let calcCollapsed = false;
+        let historyCollapsed = false;
+        let fullscreenBeforeState = {};
+
+        function applyTheme() {
+            if (isDarkTheme) {
+                document.body.classList.remove('light-theme');
+                document.querySelector('meta[name="theme-color"]').content = '#0f1117';
+            } else {
+                document.body.classList.add('light-theme');
+                document.querySelector('meta[name="theme-color"]').content = '#e8ecf1';
+            }
+            try { localStorage.setItem('theme', isDarkTheme ? 'dark' : 'light'); } catch(e) {}
+        }
+
+        function autoThemeByTime() {
+            const hour = new Date().getHours();
+            const shouldBeDark = hour >= 20 || hour < 7;
+            try {
+                const savedTheme = localStorage.getItem('theme');
+                const manualOverride = localStorage.getItem('themeManualOverride');
+                if (!manualOverride || Date.now() - parseInt(manualOverride) > 8 * 3600 * 1000) {
+                    if (savedTheme !== 'dark' && savedTheme !== 'light') {
+                        isDarkTheme = shouldBeDark;
+                        applyTheme();
+                    }
+                }
+            } catch(e) {}
+        }
+
+        document.getElementById('themeToggleBtn').addEventListener('click', () => {
+            isDarkTheme = !isDarkTheme;
+            applyTheme();
+            try { localStorage.setItem('themeManualOverride', Date.now()); } catch(e) {}
+            soundToggle();
+            showToast(isDarkTheme ? '🌙 Тёмная тема' : '☀️ Светлая тема');
+        });
+
+        try {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'light') { isDarkTheme = false; applyTheme(); }
+            else if (savedTheme === 'dark') { isDarkTheme = true; applyTheme(); }
+            else { autoThemeByTime(); }
+        } catch(e) { autoThemeByTime(); }
+
+        setInterval(autoThemeByTime, 600000);
+
+        function showToast(msg) {
+            shortcutToast.textContent = msg;
+            shortcutToast.classList.add('show');
+            clearTimeout(shortcutToast._timeout);
+            shortcutToast._timeout = setTimeout(() => {
+                shortcutToast.classList.remove('show');
+            }, 1800);
+        }
+
+        function updateUI() {
+            mainDisp.textContent = input || '0';
+            previewDisp.textContent = expr || '';
+        }
+
+        function updateAngleUI() {
+            angleBadge.textContent = angle;
+            angleBtn.textContent = angle;
+            graphModeBadge.textContent = angle;
+            if (angle === 'DEG') {
+                angleBadge.classList.add('active');
+            } else {
+                angleBadge.classList.remove('active');
+            }
+            if (graphFuncs.length) drawGraph();
+        }
+
+        function fmt(n) {
+            if (n === undefined || n === null || isNaN(n)) return 'Ошибка';
+            if (!isFinite(n)) return n > 0 ? '∞' : '-∞';
+            let s = n.toPrecision(12);
+            if (s.includes('.')) s = s.replace(/\.?0+$/, '');
+            if (Math.abs(n) > 1e12 || (Math.abs(n) < 1e-9 && n !== 0)) return n.toExponential(6);
+            return s;
+        }
+
+        function fact(n) {
+            if (n < 0 || !Number.isInteger(n)) return NaN;
+            if (n === 0 || n === 1) return 1;
+            if (n > 170) return Infinity;
+            let r = 1;
+            for (let i = 2; i <= n; i++) r *= i;
+            return r;
+        }
+
+        function addHistory(expressionStr, resultStr) {
+            const entry = {
+                expr: expressionStr,
+                result: resultStr,
+                time: new Date().toLocaleString('ru-RU')
+            };
+            history.unshift(entry);
+            if (history.length > 50) history = history.slice(0, 50);
+            try { localStorage.setItem('calcHistory', JSON.stringify(history)); } catch(e) {}
+            renderHistory();
+        }
+
+        function renderHistory() {
+            if (!historyList) return;
+            if (history.length === 0) {
+                historyList.innerHTML = '<div style="color:var(--text-dim);font-size:0.7rem;text-align:center;padding:20px;">Пока пусто.<br>Начните вычисления!</div>';
+                return;
+            }
+            historyList.innerHTML = history.map((h, i) => `
+                <div class="history-item" data-index="${i}" title="Нажмите, чтобы использовать результат">
+                    <div class="hist-expr">${h.expr}</div>
+                    <div class="hist-result">= ${h.result}</div>
+                    <div class="hist-time">${h.time}</div>
+                </div>
+            `).join('');
+
+            document.querySelectorAll('.history-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const idx = parseInt(this.dataset.index);
+                    if (history[idx]) {
+                        input = history[idx].result;
+                        expr = '';
+                        fullExpr = history[idx].result;
+                        evaluated = false;
+                        updateUI();
+                        displayArea.focus();
+                        soundClick();
+                    }
+                });
+            });
+        }
+
+        document.getElementById('clearHistoryBtn').addEventListener('click', () => {
+            history = [];
+            try { localStorage.setItem('calcHistory', JSON.stringify(history)); } catch(e) {}
+            renderHistory();
+            soundClear();
+        });
+
+        function toggleCalcPanel() {
+            calcCollapsed = !calcCollapsed;
+            const panel = document.getElementById('calcPanel');
+            const btn = document.getElementById('toggleCalcBtn');
+            if (calcCollapsed) {
+                panel.classList.add('collapsed');
+                btn.textContent = '▶';
+                showToast('Калькулятор свёрнут');
+            } else {
+                panel.classList.remove('collapsed');
+                btn.textContent = '◀';
+                showToast('Калькулятор развёрнут');
+            }
+            soundToggle();
+            setTimeout(() => { if (graphFuncs.length) drawGraph(); }, 400);
+        }
+
+        function toggleHistoryPanel() {
+            historyCollapsed = !historyCollapsed;
+            const panel = document.getElementById('historyPanel');
+            const btn = document.getElementById('toggleHistoryBtn');
+            if (historyCollapsed) {
+                panel.classList.add('collapsed');
+                btn.textContent = '◀';
+                showToast('История свёрнута');
+            } else {
+                panel.classList.remove('collapsed');
+                btn.textContent = '▶';
+                showToast('История развёрнута');
+            }
+            soundToggle();
+            setTimeout(() => { if (graphFuncs.length) drawGraph(); }, 400);
+        }
+
+        document.getElementById('toggleCalcBtn').addEventListener('click', toggleCalcPanel);
+        document.getElementById('toggleHistoryBtn').addEventListener('click', toggleHistoryPanel);
+
+        function toggleFullscreen() {
+            isFullscreen = !isFullscreen;
+            const wrap = canvasWrap;
+
+            if (isFullscreen) {
+                fullscreenBeforeState = {
+                    scrollTop: window.scrollY,
+                    bodyOverflow: document.body.style.overflow,
+                };
+                document.body.style.overflow = 'hidden';
+                wrap.classList.add('fullscreen');
+                showToast('⛶ График на весь экран (F — выход)');
+            } else {
+                document.body.style.overflow = fullscreenBeforeState.bodyOverflow || '';
+                wrap.classList.remove('fullscreen');
+                showToast('Обычный режим');
+                window.scrollTo(0, fullscreenBeforeState.scrollTop || 0);
+            }
+            soundToggle();
+            setTimeout(() => {
+                drawGraph();
+            }, 150);
+        }
+
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                if (graphFuncs.length) drawGraph();
+            }, 200);
+        });
+
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => {
+                if (graphFuncs.length) drawGraph();
+            }, 400);
+        });
+
+        document.getElementById('fullscreenBtn').addEventListener('click', toggleFullscreen);
+        canvasWrap.addEventListener('dblclick', toggleFullscreen);
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && isFullscreen) {
+                e.preventDefault();
+                toggleFullscreen();
+            }
+        });
+
+        function saveUndoState() {
+            undoStack.push({ expr, input, fullExpr, evaluated, lastRes });
+            if (undoStack.length > 30) undoStack.shift();
+        }
+
+        function undo() {
+            if (undoStack.length > 0) {
+                const prev = undoStack.pop();
+                expr = prev.expr;
+                input = prev.input;
+                fullExpr = prev.fullExpr;
+                evaluated = prev.evaluated;
+                lastRes = prev.lastRes;
+                updateUI();
+                soundClick();
+                showToast('↩ Отмена (Ctrl+Z)');
+            }
+        }
+
+        function clearAll() {
+            saveUndoState();
+            expr = '';
+            input = '0';
+            fullExpr = '';
+            evaluated = false;
+            lastRes = null;
+            updateUI();
+            soundClear();
+        }
+
+        function del() {
+            if (evaluated) { clearAll(); return; }
+            saveUndoState();
+            if (input.length > 1) {
+                input = input.slice(0, -1);
+                if (input === '-' && input.length === 1) input = '0';
+            } else if (input.length === 1 && input !== '0') {
+                input = '0';
+            } else if (expr.length > 0) {
+                expr = expr.trimEnd();
+                const lc = expr.slice(-1);
+                if ('+-*/^%'.includes(lc)) expr = expr.slice(0, -1).trimEnd();
+                else if (expr.endsWith('(')) expr = expr.slice(0, -1);
+                else {
+                    const funcs = ['sin(','cos(','tan(','log(','ln(','sqrt(','pow('];
+                    for (const f of funcs) {
+                        if (expr.endsWith(f)) { expr = expr.slice(0, -f.length); break; }
+                    }
+                }
+            }
+            updateUI();
+            soundClick();
+        }
+
+        function addVal(v) {
+            if (evaluated) {
+                saveUndoState();
+                if ('+-*/^%'.includes(v)) {
+                    expr = fmt(lastRes);
+                    input = '';
+                    fullExpr = String(lastRes);
+                } else {
+                    expr = '';
+                    input = '0';
+                    fullExpr = '';
+                }
+                evaluated = false;
+            } else {
+                saveUndoState();
+            }
+
+            if (v === 'π') {
+                const pi = String(Math.PI);
+                input = (input === '0' || input === '') ? pi : input + pi;
+            } else if (v === 'e') {
+                const eu = String(Math.E);
+                input = (input === '0' || input === '') ? eu : input + eu;
+            } else if (v === '!') {
+                if (input !== '' && input !== '0') {
+                    expr += input + '!';
+                    fullExpr += input + '!';
+                    input = '';
+                } else if (expr && !isNaN(parseFloat(expr.slice(-1)))) {
+                    expr += '!';
+                    fullExpr += '!';
+                }
+            } else if ('+-*/^%'.includes(v)) {
+                if (v === '-' && expr === '' && (input === '0' || input === '')) {
+                    input = '-';
+                    updateUI();
+                    return;
+                }
+                if (input !== '' && input !== '0' && input !== '-') {
+                    expr += input;
+                    fullExpr += input;
+                } else if (input === '-' && expr === '') {
+                    expr += input;
+                    fullExpr += input;
+                }
+                if (expr && '+-*/^%'.includes(expr.trim().slice(-1))) {
+                    expr = expr.trim().slice(0, -1) + ' ' + v + ' ';
+                } else {
+                    expr += ' ' + v + ' ';
+                }
+                fullExpr += v;
+                input = '';
+            } else if (v === '(' || v === ')') {
+                if (input !== '' && input !== '0' && input !== '-' && v === '(') {
+                    expr += input + '*(';
+                    fullExpr += input + '*(';
+                } else if (input !== '' && input !== '0' && v === ')') {
+                    expr += input + ')';
+                    fullExpr += input + ')';
+                } else {
+                    expr += v;
+                    fullExpr += v;
+                }
+                input = '';
+            } else if (v === '.') {
+                if (input.includes('.')) return;
+                if (input === '' || input === '0') input = '0.';
+                else if (input === '-') input = '-0.';
+                else input += '.';
+            } else if (v === '%') {
+                if (input !== '' && input !== '0') {
+                    expr += input + '%';
+                    fullExpr += '(' + input + '/100)';
+                    input = '';
+                }
+            } else {
+                if (input === '0' && v !== '.') input = v;
+                else if (input === '-0') input = '-' + v;
+                else input += v;
+            }
+            updateUI();
+            soundClick();
+        }
+
+        function addFunc(f) {
+            saveUndoState();
+            if (evaluated) { expr = ''; input = '0'; fullExpr = ''; evaluated = false; }
+            if (input !== '' && input !== '0' && input !== '-') {
+                expr += input + '*' + f;
+                fullExpr += input + '*' + f;
+            } else if (input === '-') {
+                expr += input + '1*' + f;
+                fullExpr += input + '1*' + f;
+            } else {
+                expr += f;
+                fullExpr += f;
+            }
+            input = '';
+            updateUI();
+            soundClick();
+        }
+
+        function toggleSign() {
+            saveUndoState();
+            if (evaluated && lastRes !== null) {
+                input = String(-lastRes);
+                expr = '';
+                fullExpr = '';
+                evaluated = false;
+            } else if (input !== '' && input !== '0') {
+                input = input.startsWith('-') ? input.substring(1) : '-' + input;
+            }
+            updateUI();
+            soundClick();
+        }
+
+        function toggleAngle() {
+            angle = angle === 'RAD' ? 'DEG' : 'RAD';
+            updateAngleUI();
+            soundToggle();
+            showToast(angle === 'RAD' ? '📐 Радианы' : '📐 Градусы');
+        }
+
+        function evaluateExpr(es) {
+            let p = es.replace(/÷/g, '/').replace(/×/g, '*').replace(/−/g, '-');
+            p = p.replace(/(\d+\.?\d*|\))\!/g, (m, c) => `fact(${c})`);
+            p = p.replace(/(\d+\.?\d*|\))\^(\d+\.?\d*|\([^)]+\))/g, 'Math.pow($1,$2)');
+            p = p.replace(/sin\(/g, 'Math.sin(');
+            p = p.replace(/cos\(/g, 'Math.cos(');
+            p = p.replace(/tan\(/g, 'Math.tan(');
+            p = p.replace(/log\(/g, 'Math.log10(');
+            p = p.replace(/ln\(/g, 'Math.log(');
+            p = p.replace(/sqrt\(/g, 'Math.sqrt(');
+            p = p.replace(/pow\(/g, 'Math.pow(');
+            p = p.replace(/(\d+\.?\d*)%/g, '($1/100)');
+            p = p.replace(/π/g, String(Math.PI));
+            p = p.replace(/(?<!Math\.)e(?!\w)/g, String(Math.E));
+            if (angle === 'DEG') {
+                p = p.replace(/Math\.sin\(/g, 'Math.sin(Math.PI/180*');
+                p = p.replace(/Math\.cos\(/g, 'Math.cos(Math.PI/180*');
+                p = p.replace(/Math\.tan\(/g, 'Math.tan(Math.PI/180*');
+                p = p.replace(/Math\.(sin|cos|tan)\(Math\.PI\/180\*([^)]+)\)/g, 'Math.$1(Math.PI/180*($2))');
+            }
+            try {
+                return new Function('Math', 'fact', `return ${p};`)(Math, fact);
+            } catch(e) {
+                return NaN;
+            }
+        }
+
+        function calculate() {
+            if (evaluated && lastRes !== null) { updateUI(); return; }
+            let fe = fullExpr;
+            if (input !== '' && input !== '0' && input !== '-') fe += input;
+            else if (input === '-' && fullExpr === '') fe = '0';
+            else if (fe === '' && input === '0') fe = '0';
+            if (fe === '' || fe === '-') { updateUI(); return; }
+            fe = fe.trim();
+            const r = evaluateExpr(fe);
+            if (isNaN(r)) {
+                mainDisp.textContent = 'Ошибка';
+                previewDisp.textContent = fe + ' =';
+                expr = '';
+                input = '0';
+                fullExpr = '';
+                evaluated = false;
+                soundError();
+            } else {
+                lastRes = r;
+                const resultStr = fmt(r);
+                addHistory(fe + ' =', resultStr);
+                expr = fe + ' =';
+                input = resultStr;
+                fullExpr = String(r);
+                evaluated = true;
+                soundCalculate();
+            }
+            updateUI();
+        }
+
+        function evalGraphFunc(fstr, x) {
+            let p = fstr.replace(/\^/g, '**');
+            p = p.replace(/sin\(/g, 'Math.sin(');
+            p = p.replace(/cos\(/g, 'Math.cos(');
+            p = p.replace(/tan\(/g, 'Math.tan(');
+            p = p.replace(/log\(/g, 'Math.log10(');
+            p = p.replace(/ln\(/g, 'Math.log(');
+            p = p.replace(/sqrt\(/g, 'Math.sqrt(');
+            p = p.replace(/abs\(/g, 'Math.abs(');
+            p = p.replace(/exp\(/g, 'Math.exp(');
+            p = p.replace(/π/g, String(Math.PI));
+            p = p.replace(/(?<!Math\.)e(?!\w)/g, String(Math.E));
+            if (angle === 'DEG') {
+                p = p.replace(/Math\.sin\(/g, 'Math.sin(Math.PI/180*');
+                p = p.replace(/Math\.cos\(/g, 'Math.cos(Math.PI/180*');
+                p = p.replace(/Math\.tan\(/g, 'Math.tan(Math.PI/180*');
+                p = p.replace(/Math\.(sin|cos|tan)\(Math\.PI\/180\*([^)]+)\)/g, 'Math.$1(Math.PI/180*($2))');
+            }
+            p = p.replace(/x/g, `(${x})`);
+            try {
+                return new Function('Math', `return ${p};`)(Math);
+            } catch(e) {
+                return NaN;
+            }
+        }
+
+        function drawGraph() {
+            if (!graphFuncs.length) {
+                if (ctx && canvas.width > 0) {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                }
+                return;
+            }
+
+            const wrap = canvasWrap;
+            const rect = wrap.getBoundingClientRect();
+            if (rect.width <= 0 || rect.height <= 0) return;
+
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            canvas.style.width = rect.width + 'px';
+            canvas.style.height = rect.height + 'px';
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.scale(dpr, dpr);
+            const W = rect.width;
+            const H = rect.height;
+
+            ctx.clearRect(0, 0, W, H);
+
+            ctx.fillStyle = isFullscreen ? '#000000' : (isDarkTheme ? '#0a0d12' : '#fafbfc');
+            ctx.fillRect(0, 0, W, H);
+
+            const xMin = -10, xMax = 10, yMin = -6, yMax = 6;
+            const xScale = W / (xMax - xMin);
+            const yScale = H / (yMax - yMin);
+            const x0 = -xMin * xScale;
+            const y0 = yMax * yScale;
+
+            ctx.strokeStyle = isDarkTheme ? '#1a2430' : '#e1e5eb';
+            ctx.lineWidth = 0.8;
+            for (let i = Math.ceil(xMin); i <= xMax; i++) {
+                const cx = (i - xMin) * xScale;
+                ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, H); ctx.stroke();
+            }
+            for (let j = Math.ceil(yMin); j <= yMax; j++) {
+                const cy = H - (j - yMin) * yScale;
+                ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(W, cy); ctx.stroke();
+            }
+
+            ctx.strokeStyle = isDarkTheme ? '#445566' : '#9ca3af';
+            ctx.lineWidth = 1.8;
+            ctx.beginPath(); ctx.moveTo(x0, 0); ctx.lineTo(x0, H); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, y0); ctx.lineTo(W, y0); ctx.stroke();
+
+            ctx.fillStyle = isDarkTheme ? '#778899' : '#6b7280';
+            ctx.font = `${Math.max(10, H/42)}px "Segoe UI", sans-serif`;
+            ctx.textAlign = 'center';
+            for (let i = Math.ceil(xMin); i <= xMax; i++) {
+                const cx = (i - xMin) * xScale;
+                if (Math.abs(cx - x0) > 20) ctx.fillText(i, cx, y0 + 16);
+            }
+            ctx.textAlign = 'right';
+            for (let j = Math.ceil(yMin); j <= yMax; j++) {
+                const cy = H - (j - yMin) * yScale;
+                if (Math.abs(cy - y0) > 18) ctx.fillText(j, x0 - 8, cy + 5);
+            }
+            ctx.fillText('0', x0 - 10, y0 + 16);
+
+            graphFuncs.forEach((fs, idx) => {
+                ctx.strokeStyle = colors[idx % colors.length];
+                ctx.lineWidth = 2.2;
+                ctx.beginPath();
+                let first = true;
+                const step = (xMax - xMin) / (W * 2);
+                for (let x = xMin; x <= xMax; x += step) {
+                    const y = evalGraphFunc(fs, x);
+                    if (isNaN(y) || !isFinite(y) || Math.abs(y) > 1e6) {
+                        first = true;
+                        continue;
+                    }
+                    const cx = (x - xMin) * xScale;
+                    const cy = H - (y - yMin) * yScale;
+                    if (first) { ctx.moveTo(cx, cy); first = false; }
+                    else ctx.lineTo(cx, cy);
+                }
+                ctx.stroke();
+
+                ctx.fillStyle = colors[idx % colors.length];
+                ctx.font = `bold ${Math.max(10, H/38)}px "Segoe UI", sans-serif`;
+                ctx.textAlign = 'left';
+                ctx.fillText(`f${idx+1}: ${fs}`, 12, 20 + idx * 20);
+            });
+        }
+
+        function addGraph(fs) {
+            const s = fs.trim();
+            if (!s) return;
+            if (isNaN(evalGraphFunc(s, 1)) && isNaN(evalGraphFunc(s, 0))) {
+                alert('Ошибка в выражении: ' + s);
+                soundError();
+                return;
+            }
+            graphFuncs.push(s);
+            graphInput.value = '';
+            drawGraph();
+            soundGraph();
+            showToast('✅ График построен: ' + s);
+        }
+
+        function clearGraphs() {
+            graphFuncs = [];
+            drawGraph();
+            graphInput.value = 'sin(x)';
+            soundClear();
+        }
+
+        function plotFromCalc() {
+            let f = '';
+            if (input !== '' && input !== '0' && input !== '-') f = input;
+            else if (expr.length > 0) f = expr.trim();
+            if (f && f !== '0') {
+                f = f.replace(/\s+/g, '');
+                graphInput.value = f;
+                addGraph(f);
+            } else {
+                alert('Нет выражения для построения графика.');
+                soundError();
+            }
+        }
+
+        document.getElementById('printGraphBtn').addEventListener('click', () => {
+            if (!graphFuncs.length) { alert('Нет графиков для печати.'); soundError(); return; }
+            const printWindow = window.open('', '_blank', 'width=800,height=600');
+            if (!printWindow) { alert('Разрешите всплывающие окна для печати.'); return; }
+            const dataURL = canvas.toDataURL('image/png');
+            printWindow.document.write(`
+                <!DOCTYPE html><html><head><title>График функции</title>
+                <meta name="viewport" content="width=device-width,initial-scale=1">
+                <style>body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;background:white;}img{max-width:100%;max-height:100vh;}@media print{body{margin:0;}img{max-width:100%;page-break-inside:avoid;}}</style>
+                </head><body><img src="${dataURL}" alt="График"></body></html>
+            `);
+            printWindow.document.close();
+            printWindow.focus();
+            setTimeout(() => printWindow.print(), 500);
+            soundClick();
+        });
+
+        function generateShareLink() {
+            if (!graphFuncs.length) return '';
+            const data = { funcs: graphFuncs, angle: angle };
+            const encoded = btoa(encodeURIComponent(JSON.stringify(data)));
+            return window.location.origin + window.location.pathname + '?graph=' + encoded;
+        }
+
+        function loadFromShareLink() {
+            const params = new URLSearchParams(window.location.search);
+            const encoded = params.get('graph');
+            if (!encoded) return;
+            try {
+                const data = JSON.parse(decodeURIComponent(atob(encoded)));
+                if (data.funcs && Array.isArray(data.funcs)) {
+                    graphFuncs = data.funcs;
+                    if (data.angle) angle = data.angle;
+                    updateAngleUI();
+                    drawGraph();
+                    graphInput.value = data.funcs[0] || '';
+                }
+            } catch(e) {}
+        }
+
+        document.getElementById('shareGraphBtn').addEventListener('click', () => {
+            const link = generateShareLink();
+            if (!link) { alert('Нет графиков для шаринга.'); soundError(); return; }
+            shareLinkInput.value = link;
+            if (qrcodeDiv && typeof QRCode !== 'undefined') {
+                qrcodeDiv.innerHTML = '';
+                new QRCode(qrcodeDiv, {
+                    text: link, width: 150, height: 150,
+                    colorDark: '#1a1e26', colorLight: '#ffffff',
+                });
+            }
+            shareModal.classList.add('active');
+            soundClick();
+        });
+
+        document.getElementById('closeShareModal').addEventListener('click', () => shareModal.classList.remove('active'));
+        shareModal.addEventListener('click', (e) => { if (e.target === shareModal) shareModal.classList.remove('active'); });
+        document.getElementById('copyShareLinkBtn').addEventListener('click', () => {
+            shareLinkInput.select();
+            try { document.execCommand('copy'); alert('Ссылка скопирована!'); } catch(e) {
+                try { navigator.clipboard.writeText(shareLinkInput.value); alert('Ссылка скопирована!'); } catch(e2) {
+                    alert('Не удалось скопировать. Скопируйте вручную.');
+                }
+            }
+            soundClick();
+        });
+
+        document.getElementById('helpBtn').addEventListener('click', () => {
+            helpModal.classList.add('active');
+            soundClick();
+        });
+        document.getElementById('closeHelpModal').addEventListener('click', () => helpModal.classList.remove('active'));
+        helpModal.addEventListener('click', (e) => { if (e.target === helpModal) helpModal.classList.remove('active'); });
+
+        document.getElementById('downloadPngBtn').addEventListener('click', () => {
+            if (!graphFuncs.length) { alert('Нет графиков.'); soundError(); return; }
+            const link = document.createElement('a');
+            link.download = 'graph_' + Date.now() + '.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            soundClick();
+        });
+
+        document.getElementById('downloadSvgBtn').addEventListener('click', () => {
+            if (!graphFuncs.length) { alert('Нет графиков.'); soundError(); return; }
+            const rect = canvasWrap.getBoundingClientRect();
+            const W = rect.width || 600;
+            const H = rect.height || 400;
+            const xMin = -10, xMax = 10, yMin = -6, yMax = 6;
+            const xScale = W / (xMax - xMin);
+            const yScale = H / (yMax - yMin);
+            const x0 = -xMin * xScale;
+            const y0 = yMax * yScale;
+            let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" style="background:${isDarkTheme?'#0a0d12':'#fafbfc'};font-family:'Segoe UI',sans-serif;">`;
+            for (let i = Math.ceil(xMin); i <= xMax; i++) {
+                const cx = (i - xMin) * xScale;
+                svg += `<line x1="${cx}" y1="0" x2="${cx}" y2="${H}" stroke="${isDarkTheme?'#1a2430':'#e1e5eb'}" stroke-width="0.8"/>`;
+            }
+            for (let j = Math.ceil(yMin); j <= yMax; j++) {
+                const cy = H - (j - yMin) * yScale;
+                svg += `<line x1="0" y1="${cy}" x2="${W}" y2="${cy}" stroke="${isDarkTheme?'#1a2430':'#e1e5eb'}" stroke-width="0.8"/>`;
+            }
+            svg += `<line x1="${x0}" y1="0" x2="${x0}" y2="${H}" stroke="${isDarkTheme?'#445566':'#9ca3af'}" stroke-width="1.8"/>`;
+            svg += `<line x1="0" y1="${y0}" x2="${W}" y2="${y0}" stroke="${isDarkTheme?'#445566':'#9ca3af'}" stroke-width="1.8"/>`;
+            graphFuncs.forEach((fs, idx) => {
+                let pathD = '';
+                let first = true;
+                const step = (xMax - xMin) / (W * 2);
+                for (let x = xMin; x <= xMax; x += step) {
+                    const y = evalGraphFunc(fs, x);
+                    if (isNaN(y) || !isFinite(y) || Math.abs(y) > 1e6) { first = true; continue; }
+                    const cx = (x - xMin) * xScale;
+                    const cy = H - (y - yMin) * yScale;
+                    if (first) { pathD += `M${cx},${cy} `; first = false; }
+                    else pathD += `L${cx},${cy} `;
+                }
+                svg += `<path d="${pathD}" fill="none" stroke="${colors[idx%colors.length]}" stroke-width="2.2"/>`;
+                svg += `<text x="12" y="${20+idx*20}" fill="${colors[idx%colors.length]}" font-size="11" font-weight="bold">f${idx+1}: ${fs}</text>`;
+            });
+            svg += '</svg>';
+            const blob = new Blob([svg], {type: 'image/svg+xml'});
+            const link = document.createElement('a');
+            link.download = 'graph_' + Date.now() + '.svg';
+            link.href = URL.createObjectURL(blob);
+            link.click();
+            URL.revokeObjectURL(link.href);
+            soundClick();
+        });
+
+        document.getElementById('voiceBtn').addEventListener('click', () => {
+            initAudio();
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                alert('Голосовой ввод не поддерживается вашим браузером. Попробуйте Chrome.');
+                soundError();
+                return;
+            }
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'ru-RU';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+            document.getElementById('voiceBtn').textContent = '🎤...';
+            recognition.start();
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript.toLowerCase();
+                document.getElementById('voiceBtn').textContent = '🎤';
+                let processed = transcript
+                    .replace(/синус/g, 'sin(')
+                    .replace(/косинус/g, 'cos(')
+                    .replace(/тангенс/g, 'tan(')
+                    .replace(/логарифм/g, 'log(')
+                    .replace(/натуральный логарифм/g, 'ln(')
+                    .replace(/корень/g, 'sqrt(')
+                    .replace(/пи/g, 'π')
+                    .replace(/в степени/g, '^')
+                    .replace(/плюс/g, '+')
+                    .replace(/минус/g, '-')
+                    .replace(/умножить/g, '*')
+                    .replace(/разделить/g, '/')
+                    .replace(/равно/g, '=')
+                    .replace(/скобка открывается/g, '(')
+                    .replace(/скобка закрывается/g, ')')
+                    .replace(/\s+/g, '');
+                if (processed.includes('=')) {
+                    graphInput.value = processed.replace('=', '');
+                    addGraph(graphInput.value);
+                } else {
+                    graphInput.value = processed;
+                    graphInput.focus();
+                }
+                soundClick();
+            };
+            recognition.onerror = () => {
+                document.getElementById('voiceBtn').textContent = '🎤';
+                alert('Ошибка распознавания речи.');
+                soundError();
+            };
+            recognition.onend = () => {
+                document.getElementById('voiceBtn').textContent = '🎤';
+            };
+        });
+
+        const basicTemplates = [
+            'sin(x)', 'cos(x)', 'tan(x)', 'x^2', 'x^3', 'sqrt(x)', 'ln(x)', '1/x',
+            'abs(x)', 'exp(x)', 'sin(x)+cos(x)', 'x^2-4', 'sin(x)/x'
+        ];
+        const physicsTemplates = [
+            'sin(2*π*x)', 'exp(-0.3*x)*sin(2*x)', '5*exp(-((x-2)^2)/0.5)',
+            '2*abs(sin(π*x))', 'sin(x)+0.5*sin(3*x)', '2*cos(x)-cos(2*x)',
+            '2*exp(-0.5*x)', '5/(1+exp(-2*(x-3)))'
+        ];
+        const statsTemplates = [
+            '(1/sqrt(2*π))*exp(-x^2/2)', 'exp(-abs(x))', '(x>0?1:0)*exp(-x)',
+            'sin(π*x)/(π*x)', 'x*exp(-x^2)'
+        ];
+
+        function fillTemplates(id, arr) {
+            const cnt = document.getElementById(id);
+            if (!cnt) return;
+            cnt.innerHTML = arr.map(f => `<span data-func="${f}">${f}</span>`).join('');
+        }
+        fillTemplates('basicTemplates', basicTemplates);
+        fillTemplates('physicsTemplates', physicsTemplates);
+        fillTemplates('statsTemplates', statsTemplates);
+
+        document.querySelectorAll('.templates-scroll span').forEach(el => {
+            el.addEventListener('click', function() {
+                const f = this.dataset.func;
+                if (f) {
+                    graphInput.value = f;
+                    addGraph(f);
+                }
+            });
+        });
+
+        document.querySelectorAll('#calcPanel button').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                initAudio();
+                const action = this.dataset.action;
+                const value = this.dataset.value;
+                switch(action) {
+                    case 'value': addVal(value); break;
+                    case 'func': addFunc(value); break;
+                    case 'clear': clearAll(); break;
+                    case 'delete': del(); break;
+                    case 'toggleSign': toggleSign(); break;
+                    case 'toggleAngle': toggleAngle(); break;
+                    case 'calculate': calculate(); break;
+                    case 'plotFromCalc': plotFromCalc(); break;
+                }
+                displayArea.focus();
+            });
+        });
+
+        document.getElementById('plotBtn').addEventListener('click', () => {
+            initAudio();
+            if (graphInput.value.trim()) addGraph(graphInput.value.trim());
+        });
+        document.getElementById('clearGraphsBtn').addEventListener('click', clearGraphs);
+        graphInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                initAudio();
+                if (graphInput.value.trim()) addGraph(graphInput.value.trim());
+            }
+        });
+
+        displayArea.addEventListener('keydown', (e) => {
+            initAudio();
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
+                e.preventDefault();
+                undo();
+                return;
+            }
+            e.preventDefault();
+            const k = e.key;
+            if (k >= '0' && k <= '9') addVal(k);
+            else if (k === '.') addVal('.');
+            else if (k === '+') addVal('+');
+            else if (k === '-') addVal('-');
+            else if (k === '*') addVal('*');
+            else if (k === '/') addVal('/');
+            else if (k === '%') addVal('%');
+            else if (k === '(') addVal('(');
+            else if (k === ')') addVal(')');
+            else if (k === '^') addVal('^');
+            else if (k === 'Enter' || k === '=') calculate();
+            else if (k === 'Backspace') del();
+            else if (k === 'Escape') { if (!isFullscreen) clearAll(); }
+            else if (k === 'p' || k === 'P') addVal('π');
+            else if (k === 'e' && !e.ctrlKey && !e.metaKey) addVal('e');
+            else if (k === '!') addVal('!');
+        });
+        displayArea.addEventListener('click', () => displayArea.focus());
+
+        document.addEventListener('keydown', (e) => {
+            if (document.activeElement === graphInput) return;
+            if (document.activeElement?.tagName === 'INPUT' && document.activeElement !== displayArea) return;
+            if (document.activeElement?.tagName === 'TEXTAREA') return;
+
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'C' || e.key === 'c' || e.key === 'С' || e.key === 'с')) {
+                e.preventDefault();
+                toggleCalcPanel();
+                return;
+            }
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'H' || e.key === 'h')) {
+                e.preventDefault();
+                toggleHistoryPanel();
+                return;
+            }
+            if ((e.key === 'f' || e.key === 'F' || e.key === 'а' || e.key === 'А') && document.activeElement !== displayArea) {
+                e.preventDefault();
+                toggleFullscreen();
+                return;
+            }
+            if (e.key === '?' && !e.shiftKey) {
+                e.preventDefault();
+                helpModal.classList.add('active');
+                return;
+            }
+            if (e.key === '/' && e.shiftKey) {
+                e.preventDefault();
+                helpModal.classList.add('active');
+                return;
+            }
+            if (document.activeElement === displayArea || document.activeElement?.tagName === 'BUTTON') return;
+            const k = e.key;
+            if (k >= '0' && k <= '9') { initAudio(); addVal(k); displayArea.focus(); }
+            else if (k === '.') { initAudio(); addVal('.'); displayArea.focus(); }
+            else if (k === '+') { initAudio(); addVal('+'); displayArea.focus(); }
+            else if (k === '-') { initAudio(); addVal('-'); displayArea.focus(); }
+            else if (k === '*') { initAudio(); addVal('*'); displayArea.focus(); }
+            else if (k === '/') { e.preventDefault(); initAudio(); addVal('/'); displayArea.focus(); }
+            else if (k === '%') { initAudio(); addVal('%'); displayArea.focus(); }
+            else if (k === '(') { initAudio(); addVal('('); displayArea.focus(); }
+            else if (k === ')') { initAudio(); addVal(')'); displayArea.focus(); }
+            else if (k === '^') { initAudio(); addVal('^'); displayArea.focus(); }
+            else if (k === 'Enter' || k === '=') { e.preventDefault(); initAudio(); calculate(); displayArea.focus(); }
+            else if (k === 'Backspace') { e.preventDefault(); initAudio(); del(); displayArea.focus(); }
+            else if (k === 'Escape' && !isFullscreen) { initAudio(); clearAll(); displayArea.focus(); }
+        });
+
+        updateUI();
+        updateAngleUI();
+        renderHistory();
+        loadFromShareLink();
+        if (graphFuncs.length === 0) {
+            graphFuncs.push('sin(x)');
+        }
+        setTimeout(() => drawGraph(), 300);
+        setTimeout(() => displayArea.focus(), 500);
+    })();
+    </script>
+</body>
+</html>
